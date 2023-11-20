@@ -18,9 +18,15 @@
     <ClCompile Include="looong_int.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="PrimeNubmers.cpp">
+      <Filter>Файлы ресурсов</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="big_integer.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="PrimeNumbers.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

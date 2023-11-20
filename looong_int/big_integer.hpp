@@ -3,7 +3,9 @@
 #include <ostream>
 #include <iomanip>
 #include <sstream>
-
+#include <random>
+#include <bitset>
+//#include "PrimeNumbers.h"
 class big_integer {
     // основание системы счисления (1 000 000 000)
     static const int BASE = 1000000000;
@@ -62,6 +64,25 @@ public:
     bool odd() const;
     bool even() const;
     const big_integer pow(big_integer) const;
+
+    big_integer mulmod(big_integer, big_integer, big_integer);
+    big_integer powMod(big_integer, big_integer, big_integer);
+
+    std::vector<int> first_primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
+                                    31, 37, 41, 43, 47, 53, 59, 61, 67,
+                                    71, 73, 79, 83, 89, 97, 101, 103,
+                                    107, 109, 113, 127, 131, 137, 139,
+                                    149, 151, 157, 163, 167, 173, 179,
+                                    181, 191, 193, 197, 199, 211, 223,
+                                    227, 229, 233, 239, 241, 251, 257,
+                                    263, 269, 271, 277, 281, 283, 293,
+                                    307, 311, 313, 317, 331, 337, 347, 349 };
+    big_integer getRandom64(big_integer, big_integer);
+    big_integer getLowLevelPrime(big_integer, big_integer);
+    bool trialComposite(big_integer a, big_integer evenC, big_integer to_test, int max_div_2);
+    bool MillerRabinTest(big_integer to_test, big_integer);
+    big_integer getBigPrime(big_integer);
+    big_integer getSQRTPrime(big_integer);
 };
 
 // создает длинное целое число со значением 0
@@ -353,6 +374,11 @@ const big_integer operator *(const big_integer& left, const big_integer& right) 
             carry = static_cast<int>(cur / big_integer::BASE);
             //std::cout << "chetchik " << i << " result " << result<<std::endl;
         }
+        //std::cout << "Loading% " << left._digits.size() - 1 << std::endl;
+        // рабин Миллер
+        //берем каждый символ получаем код в кодировке записываем символы в число
+        //число это шифровка
+        //реализуем алгоритм RSA 
     }
 
     result._is_negative = left._is_negative != right._is_negative;
@@ -446,4 +472,206 @@ const big_integer big_integer::pow(big_integer n) const {
     }
 
     return result;
+}
+/// <summary>
+/// ////////////////////////////////////////////////////////////////////////////////////
+/// </summary>
+/// <returns></returns>
+/// 
+
+
+big_integer big_integer::getBigPrime(big_integer size) {
+    big_integer seed = 1;
+    while (true) {
+        big_integer candidate = getLowLevelPrime(seed, size);
+        std::cout << std::endl << "Кандидат после проверки нижнего уровня - -  " << candidate << std::endl << std::endl;
+        candidate = getSQRTPrime(candidate);
+        std::cout << std::endl << "Кандидат после проверки корня числа - -  " << candidate << std::endl << std::endl;
+
+        
+        //if (MillerRabinTest(candidate, seed))
+            //return candidate;
+        //seed = seed * rand() * rand() + rand();  // Линейный конгруэнтный метод
+        return candidate;
+    }
+}
+
+big_integer big_integer::getSQRTPrime(big_integer candidate) 
+{
+    std::cout << std::endl << "Кандидат - -" << std::endl << candidate;
+    bool is_prime = true;
+
+    while (true)
+    {
+        is_prime = true;
+        for (big_integer i = 3; i*i < candidate; i=i+2)
+        {
+            std::cout << i << "||||||||";
+            if (candidate % i == 0)
+            {
+                is_prime = false;
+                break;
+            }
+        }
+        if (is_prime)
+            return candidate;
+        candidate += 1;
+    }
+}
+
+big_integer big_integer::getLowLevelPrime(big_integer seed, big_integer size) {
+    big_integer candidate = size;
+    std::cout << std::endl << "Кандидат - -" << std::endl << candidate;
+
+    bool is_prime = true;
+    while (true)
+    {
+
+        std::cout << std::endl << "Кандидат - -" << std::endl << candidate;
+        is_prime = true;
+        for (int i = 0; i < first_primes.size(); i++) {
+            if (candidate == first_primes[i])
+                return candidate;
+
+            if (candidate % first_primes[i] == 0) {
+                is_prime = false;
+                //return 0;
+            }
+        }
+        if (candidate._digits[0] % 2 == 0)
+        {
+            is_prime = false;
+            //return 0;
+        }
+
+        if (candidate._digits[0] % 5 == 0)
+        {
+            is_prime = false;
+            //return 0;
+        }
+
+
+        if (is_prime)
+            return candidate;
+        candidate += 1;
+    }
+
+}
+
+/*
+Суть метода :
+    n = to_test		k = accurasy
+    d = evenC		r = max_div_2
+    d * 2^r = n - 1
+
+*/
+bool big_integer::MillerRabinTest(big_integer to_test, big_integer seed) {
+    //Точность
+    constexpr int accuracy = 20;
+
+    int max_div_2 = 0;
+    big_integer evenC = to_test - 1;
+    while (evenC % 2 == 0) {
+        evenC = evenC/2;
+        max_div_2++;
+    }
+
+    // random numbers init
+    /*std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<uint64_t> distr(2, to_test);*/
+    for (int i = 0; i < accuracy; i++) {
+        big_integer a = getRandom64(seed, to_test - 2);
+        std::cout << "\n\tNumber a =\t" << a << std::endl;// 3765229820729
+        if (trialComposite(a, evenC, to_test, max_div_2)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*
+Суть метода :
+    n = to_test		a = a - случайно сгенерированное число
+    d = evenC		r = max_div_2
+    1|(n-1) = pow(a, d) % n		- Производится r раз
+*/
+bool big_integer::trialComposite(big_integer a, big_integer evenC, big_integer to_test, int max_div_2) {
+    
+    std::cout << "\n\nChto v stepen" << a << "\t v stepen\t" << evenC << std::endl;
+    big_integer x = a.pow(evenC) % to_test;
+
+    if ((to_test - 1) == x)
+        return true;
+    if (1 == x)
+        return true;
+
+    //if (powMod(a, evenC, to_test) == 1)
+    //    return false;
+
+    //for (int i = 0; i < max_div_2; i++) {
+    //    big_integer temp = static_cast<uint64_t>(1) << i;
+    //    if (powMod(a, temp * evenC, to_test) == to_test - 1)
+    //        return false;
+    //}
+
+    for (int i = 0; i < max_div_2; i++) {
+        x = (x * x) % to_test;
+        if ((to_test - 1) == x)
+            return true;
+    }
+
+    return false;
+}
+
+/*Суть метода :
+        n = n		a = a - случайно сгенерированное число
+        d = b
+        1 | (n - 1) = pow(a, d) % n - Производится r раз
+
+*/
+
+
+big_integer big_integer::getRandom64(big_integer seed,big_integer size) {
+    // the value need to be 63 bits because you can not using 64 bit values do a^2 which is needed
+    big_integer asd(2);
+    //std::cout << std::endl << "Seed " << seed  << std::endl;
+    //std::cout << std::endl << "Size " << size << std::endl;
+
+
+    std::cout << std::endl << "Random Numb: " << seed % size << std::endl;
+    return seed % size;     // Вернуть значение в диапазоне 0-n
+}
+
+
+
+big_integer big_integer::powMod(big_integer a, big_integer b, big_integer n) {
+    big_integer x = 1;
+
+    a %= n;
+
+    while (b > 0) {
+        if (b % 2 == 1) {
+            x = mulmod(x, a, n); // multiplying with base
+        }
+        a = mulmod(a, a, n); // squaring the base
+        b = b / 2;
+    }
+    return x % n;
+}
+
+big_integer big_integer::mulmod(big_integer a, big_integer b, big_integer m) {
+    big_integer res = 0;
+
+    while (a != 0) {
+        if (1) {
+
+            res = (res + b) % m;
+        }
+        a = a / 1;
+        b = (b * 2) % m;
+    }
+    std::cout << std::endl;
+    return res;
 }

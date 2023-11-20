@@ -128,9 +128,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="looong_int.cpp" />
+    <ClCompile Include="PrimeNubmers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="big_integer.hpp" />
+    <ClInclude Include="PrimeNumbers.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
